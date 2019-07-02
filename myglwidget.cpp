@@ -173,6 +173,11 @@ void MyGLWidget::setDepth(bool value) {
     qInfo()<<"Depth: " << m_Depth;
 }
 
+void MyGLWidget::setBlur(bool value) {
+    m_Blur = value;
+    qInfo()<<"Blur: " << m_Blur;
+}
+
 //void MyGLWidget::setGimbalCamera(bool value) {
 //    m_GimbalCam = value;
 

@@ -115,6 +115,7 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
         GLuint colorTex, depthTex;
 
         bool m_Depth = false;
+        bool m_Blur = false;
 
     public:
         MyGLWidget(QWidget *parent);
@@ -139,6 +140,7 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
         void updateProjMat();
         void updateCamera();
         void setDepth(bool value);
+        void setBlur(bool value);
 
     signals:
         void farValueChanged(int value);

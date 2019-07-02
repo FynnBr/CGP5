@@ -29,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->gimbalCB, &QCheckBox::toggled, ui->openGLWidget, &MyGLWidget::setGimbalCamera);
     connect(ui->animationCB, &QCheckBox::toggled, ui->openGLWidget, &MyGLWidget::setAnimation);
     connect(ui->depthCB, &QCheckBox::toggled, ui->openGLWidget, &MyGLWidget::setDepth);
+    connect(ui->blurCB, &QCheckBox::toggled, ui->openGLWidget, &MyGLWidget::setBlur);
 
     // Lambda Methoden
     connect(ui->vsFOV, &QSlider::valueChanged, [=] (){qInfo() << ui->openGLWidget->getFOV();});

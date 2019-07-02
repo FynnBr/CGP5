@@ -209,6 +209,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QCheckBox" name="blurCB">
+              <property name="text">
+               <string>Blur</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QCheckBox" name="gimbalCB">
               <property name="text">
                <string>Gimbal Camera</string>

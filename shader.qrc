@@ -17,5 +17,6 @@
         <file>light.vert</file>
         <file>triangles.frag</file>
         <file>triangles.vert</file>
+        <file>compute.glsl</file>
     </qresource>
 </RCC>

@@ -67,6 +67,8 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
         QOpenGLShaderProgram* mp_programC;
         QOpenGLShaderProgram* mp_program_light;
         QOpenGLShaderProgram* mp_program2;
+        QOpenGLShaderProgram* mp_program_compute;
+
         GLuint m_vbo;
         GLuint m_vao;
         GLuint m_ibo;
@@ -116,6 +118,9 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
 
         bool m_Depth = false;
         bool m_Blur = false;
+
+        int screenshotCount = 0;
+        GLuint outTex;
 
     public:
         MyGLWidget(QWidget *parent);

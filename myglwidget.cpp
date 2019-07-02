@@ -440,6 +440,10 @@ void MyGLWidget::initializeGL(){
     mp_program2->addShaderFromSourceFile(QOpenGLShader::Vertex,      ":/triangles.vert");
     mp_program2->addShaderFromSourceFile(QOpenGLShader::Fragment,    ":/triangles.frag");
     Q_ASSERT(mp_program2->link());
+
+    mp_program_compute = new QOpenGLShaderProgram();
+    mp_program_compute->addShaderFromSourceFile(QOpenGLShader::Compute,     ":/compute.glsl");
+    Q_ASSERT(mp_program_compute->link());
 }
 
 void MyGLWidget::resizeGL(int w, int h){
@@ -610,6 +614,7 @@ void MyGLWidget::paintGL(){
     // glBindVertexArray(0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, this->defaultFramebufferObject());
+
     if(m_Depth) {
         mp_program->release();
         glBindVertexArray(m_vao);
@@ -624,6 +629,22 @@ void MyGLWidget::paintGL(){
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         mp_program2->release();
     } else {
+
+        if(m_Blur) {
+            mp_program->release();
+            mp_program_compute->bind();
+            glBindImageTexture(0, colorTex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+            glBindImageTexture(1, outTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+            glDispatchCompute(this->width(), this->height(), 1);
+            mp_program_compute->release();
+            mp_program2->bind();
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, outTex);
+            mp_program2->setUniformValue(mp_program2->uniformLocation("uTex2"), 2);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            mp_program2->release();
+                }
+
         glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo);
         glBlitFramebuffer(0, 0, this->width(), this->height(), 0, 0, this->width(), this->height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
     }

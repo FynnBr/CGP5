@@ -1,10 +1,10 @@
 #ifndef MYSKYBOX_H
 #define MYSKYBOX_H
 
-#include <QOpenGLFunctions_4_1_Core>
+#include <QOpenGLFunctions_4_4_Core>
 #include <QOpenGLShaderProgram>
 
-class MySkybox : QOpenGLFunctions_4_1_Core {
+class MySkybox : QOpenGLFunctions_4_4_Core {
 
 public:
     MySkybox();

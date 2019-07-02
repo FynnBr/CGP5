@@ -15,5 +15,7 @@
         <file>skybox_images/top.jpg</file>
         <file>light.frag</file>
         <file>light.vert</file>
+        <file>triangles.frag</file>
+        <file>triangles.vert</file>
     </qresource>
 </RCC>

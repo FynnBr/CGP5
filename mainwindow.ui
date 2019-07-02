@@ -202,6 +202,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QCheckBox" name="depthCB">
+              <property name="text">
+               <string>Depth</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QCheckBox" name="gimbalCB">
               <property name="text">
                <string>Gimbal Camera</string>

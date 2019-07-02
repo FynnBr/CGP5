@@ -142,6 +142,15 @@ void MyGLWidget::keyPressEvent(QKeyEvent *event) {
     } else if(event->key() == Qt::Key_Down) {
         m_CameraAngle.setY(m_CameraAngle.y() + 2.0f);
         updateCamera();
+    } else if(event->key() == Qt::Key_P) {
+        // size () returns the size of the widget, it is assumed to be the same as the texture size
+        QImage img(size(), QImage::Format_RGBA8888);
+        // make/doneCurrent() are only needed when calling from outside paintGL()
+        makeCurrent();
+        glBindTexture(GL_TEXTURE_2D, colorTex);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
+        doneCurrent();
+        img.mirrored(false, true).save("screenshot.png");
     }
     else {
         QOpenGLWidget::keyPressEvent(event);
@@ -157,6 +166,11 @@ void MyGLWidget::moveTexture(int value){
 void MyGLWidget::setAnimation(bool value){
     animationActive = value;
     qInfo()<<"spin to win" << animationActive;
+}
+
+void MyGLWidget::setDepth(bool value) {
+    m_Depth = value;
+    qInfo()<<"Depth: " << m_Depth;
 }
 
 //void MyGLWidget::setGimbalCamera(bool value) {
@@ -219,6 +233,52 @@ void MyGLWidget::initializeGL(){
     Q_ASSERT(initializeOpenGLFunctions());
 
     m_Aspect = this->width()/this->height();
+
+    struct Vertex {
+        GLfloat position[2];
+        GLfloat texture[2];
+    };
+
+    Vertex vert[] = {
+        {
+            {-1, -1},
+            {0, 0}
+        },
+        {
+            {1, -1},
+            {1, 0}
+        },
+        {
+            {-1, 1},
+            {0, 1}
+        },
+        {
+            {1, 1},
+            {1, 1}
+        }
+    };
+
+    glGenVertexArrays(1, &m_vao);
+    glBindVertexArray(m_vao);
+
+    GLuint data[] = {0, 1, 2, 1, 3, 2};
+    glGenBuffers(1, &m_ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vert), vert, GL_STATIC_DRAW);
+
+    #define OFS(s, a) reinterpret_cast<void* const>(offsetof(s, a))
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFS(Vertex,position));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFS(Vertex,texture));
+
+    #undef OFS
+
     //setAngle(45);
     /*setNear(5.0);
     setFar(7.0);*/
@@ -339,6 +399,27 @@ void MyGLWidget::initializeGL(){
 
     skybox.initializeGL();
 
+    // Frame Buffer Object init
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+    glGenTextures(1, &colorTex);
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    // glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, this->width(), this->height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, this->width(), this->height());
+
+    glGenTextures(1, &depthTex);
+    glBindTexture(GL_TEXTURE_2D, depthTex);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, this->width(), this->height());
+
+
+    // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+
+
+    Q_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
     // Shader Programm für texturiertes Objekt
     mp_program = new QOpenGLShaderProgram();
     mp_program->addShaderFromSourceFile(QOpenGLShader::Vertex,      ":/default.vert");
@@ -349,6 +430,11 @@ void MyGLWidget::initializeGL(){
     mp_program_light->addShaderFromSourceFile(QOpenGLShader::Vertex,      ":/light.vert");
     mp_program_light->addShaderFromSourceFile(QOpenGLShader::Fragment,    ":/light.frag");
     Q_ASSERT(mp_program_light->link());
+
+    mp_program2 = new QOpenGLShaderProgram();
+    mp_program2->addShaderFromSourceFile(QOpenGLShader::Vertex,      ":/triangles.vert");
+    mp_program2->addShaderFromSourceFile(QOpenGLShader::Fragment,    ":/triangles.frag");
+    Q_ASSERT(mp_program2->link());
 }
 
 void MyGLWidget::resizeGL(int w, int h){
@@ -358,9 +444,12 @@ updateProjMat();
 }
 
 void MyGLWidget::paintGL(){
-    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     skybox.render(projecMat.transposed(), cameraMat);
+
 
     glBindBuffer(GL_UNIFORM_BUFFER, uboLights); //Bind Buffer
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboLights);
@@ -514,6 +603,26 @@ void MyGLWidget::paintGL(){
     }
 
     // glBindVertexArray(0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, this->defaultFramebufferObject());
+    if(m_Depth) {
+        mp_program->release();
+        glBindVertexArray(m_vao);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mp_program2->bind();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, depthTex);
+        mp_program2->setUniformValue(mp_program2->uniformLocation("uTex"), 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, colorTex);
+        mp_program2->setUniformValue(mp_program2->uniformLocation("uTex2"), 2);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        mp_program2->release();
+    } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo);
+        glBlitFramebuffer(0, 0, this->width(), this->height(), 0, 0, this->width(), this->height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
+
     this->update();
 }
 
@@ -522,6 +631,7 @@ void MyGLWidget::finalize() {
     glDeleteBuffers(1, &m_ibo);
     glDeleteVertexArrays(1, &m_vao);
     glDeleteTextures(1, &m_tex);
+    glDeleteFramebuffers(1, &m_fbo);
     delete mp_program;
 }
 

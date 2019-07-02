@@ -66,6 +66,7 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
         QOpenGLShaderProgram* mp_program;
         QOpenGLShaderProgram* mp_programC;
         QOpenGLShaderProgram* mp_program_light;
+        QOpenGLShaderProgram* mp_program2;
         GLuint m_vbo;
         GLuint m_vao;
         GLuint m_ibo;
@@ -110,6 +111,11 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
 
         int theShine;
 
+        GLuint m_fbo;
+        GLuint colorTex, depthTex;
+
+        bool m_Depth = false;
+
     public:
         MyGLWidget(QWidget *parent);
         ~MyGLWidget();
@@ -132,6 +138,7 @@ class MyGLWidget : public QOpenGLWidget, QOpenGLFunctions_4_4_Core{
         void setGimbalCamera(bool gimbalCam);
         void updateProjMat();
         void updateCamera();
+        void setDepth(bool value);
 
     signals:
         void farValueChanged(int value);
